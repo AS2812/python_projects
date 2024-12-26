@@ -95,7 +95,8 @@ class PharmacyManagementSystem:
             ("Phone:", "cust_phone"),
             ("Date of Birth:", "date_birth"),
             ("Gender:", "gender"),
-            ("Insurance:", "insurance")
+            ("Insurance:", "insurance"),
+            ("Address ID:", "address_id")
         ]
 
         for idx, (label_text, var_name) in enumerate(fields):
@@ -110,6 +111,10 @@ class PharmacyManagementSystem:
                                        foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
                 date_entry.grid(row=idx//3, column=(idx%3)*2 + 1, padx=5, pady=5, sticky='w')
                 setattr(self, var_name, date_entry)
+            elif var_name == "address_id":
+                entry = ttk.Entry(form_frame)
+                entry.grid(row=idx//3, column=(idx%3)*2 + 1, padx=5, pady=5, sticky='w')
+                setattr(self, var_name, entry)
             else:
                 entry = ttk.Entry(form_frame)
                 entry.grid(row=idx//3, column=(idx%3)*2 + 1, padx=5, pady=5, sticky='w')
@@ -128,7 +133,7 @@ class PharmacyManagementSystem:
         tree_frame = ttk.Frame(customers_frame)
         tree_frame.pack(fill='both', expand=True, padx=10, pady=5)
 
-        columns = ('ID', 'Name', 'Phone', 'DOB', 'Gender', 'Insurance')
+        columns = ('ID', 'Name', 'Phone', 'DOB', 'Gender', 'Insurance', 'Address ID')
         self.customer_tree = ttk.Treeview(tree_frame, columns=columns, show='headings')
         for col in columns:
             self.customer_tree.heading(col, text=col)
@@ -159,11 +164,13 @@ class PharmacyManagementSystem:
             self.date_birth.set_date(values[3])
             self.gender.set(values[4])
             self.insurance.set(values[5])
+            self.address_id.delete(0, tk.END)
+            self.address_id.insert(0, values[6])
 
     def load_customers(self):
         query = """
         SELECT cust_id, cust_name, cust_phone, date_birth, 
-               gender, insurance
+               gender, insurance, address_id
         FROM Customer
         """
         customers = self.execute_db_operation(query)
@@ -171,7 +178,7 @@ class PharmacyManagementSystem:
         if customers:
             for customer in customers:
                 cust_date = customer.date_birth.strftime('%Y-%m-%d') if isinstance(customer.date_birth, datetime) else customer.date_birth
-                self.customer_tree.insert('', 'end', values=(customer.cust_id, customer.cust_name, customer.cust_phone, cust_date, customer.gender, customer.insurance))
+                self.customer_tree.insert('', 'end', values=(customer.cust_id, customer.cust_name, customer.cust_phone, cust_date, customer.gender, customer.insurance, customer.address_id))
 
     def add_customer(self):
         try:
@@ -181,15 +188,16 @@ class PharmacyManagementSystem:
             date_birth = self.date_birth.get_date().strftime('%Y-%m-%d')
             gender = self.gender.get()
             insurance = self.insurance.get()
+            address_id = self.address_id.get().strip()
 
-            if not cust_id or not cust_name:
-                messagebox.showerror("Error", "Please enter Customer ID and Name.")
+            if not cust_id or not cust_name or not address_id:
+                messagebox.showerror("Error", "Please enter Customer ID, Name, and Address ID.")
                 return
 
             query = """
             INSERT INTO Customer (cust_id, cust_name, cust_phone, date_birth, 
-                                  gender, insurance)
-            VALUES (?, ?, ?, ?, ?, ?)
+                                  gender, insurance, address_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """
             params = (
                 cust_id,
@@ -197,7 +205,8 @@ class PharmacyManagementSystem:
                 cust_phone,
                 date_birth,
                 gender,
-                insurance
+                insurance,
+                address_id
             )
             self.execute_db_operation(query, params)
             self.load_customers()
@@ -219,15 +228,20 @@ class PharmacyManagementSystem:
             date_birth = self.date_birth.get_date().strftime('%Y-%m-%d')
             gender = self.gender.get()
             insurance = self.insurance.get()
+            address_id = self.address_id.get().strip()
 
             if not cust_id:
                 messagebox.showerror("Error", "Please enter Customer ID.")
                 return
 
+            if not address_id:
+                messagebox.showerror("Error", "Please enter Address ID.")
+                return
+
             query = """
             UPDATE Customer
             SET cust_name = ?, cust_phone = ?, date_birth = ?, 
-                gender = ?, insurance = ?
+                gender = ?, insurance = ?, address_id = ?
             WHERE cust_id = ?
             """
             params = (
@@ -236,6 +250,7 @@ class PharmacyManagementSystem:
                 date_birth,
                 gender,
                 insurance,
+                address_id,
                 cust_id
             )
             self.execute_db_operation(query, params)
@@ -254,6 +269,7 @@ class PharmacyManagementSystem:
         self.date_birth.set_date(datetime.today())
         self.gender.set('')
         self.insurance.set('')
+        self.address_id.delete(0, tk.END)
 
     # -----------------------------
     # Employee Operations
@@ -274,7 +290,8 @@ class PharmacyManagementSystem:
             ("Date of Birth:", "emp_dob"),
             ("Gender:", "emp_gender"),
             ("Hire Date:", "hire_date"),
-            ("Salary:", "salary")
+            ("Salary:", "salary"),
+            ("Address ID:", "emp_address_id")
         ]
 
         for idx, (label_text, var_name) in enumerate(fields):
@@ -290,6 +307,10 @@ class PharmacyManagementSystem:
                                        foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
                 date_entry.grid(row=row, column=col + 1, padx=5, pady=5, sticky='w')
                 setattr(self, var_name, date_entry)
+            elif var_name == "emp_address_id":
+                entry = ttk.Entry(form_frame)
+                entry.grid(row=row, column=col + 1, padx=5, pady=5, sticky='w')
+                setattr(self, var_name, entry)
             else:
                 entry = ttk.Entry(form_frame)
                 entry.grid(row=row, column=col + 1, padx=5, pady=5, sticky='w')
@@ -308,7 +329,7 @@ class PharmacyManagementSystem:
         tree_frame = ttk.Frame(employees_frame)
         tree_frame.pack(fill='both', expand=True, padx=10, pady=5)
 
-        columns = ('ID', 'Title', 'Name', 'Phone', 'DOB', 'Gender', 'Hire Date', 'Salary')
+        columns = ('ID', 'Title', 'Name', 'Phone', 'DOB', 'Gender', 'Hire Date', 'Salary', 'Address ID')
         self.employee_tree = ttk.Treeview(tree_frame, columns=columns, show='headings')
         for col in columns:
             self.employee_tree.heading(col, text=col)
@@ -343,11 +364,13 @@ class PharmacyManagementSystem:
             self.hire_date.set_date(values[6])
             self.salary.delete(0, tk.END)
             self.salary.insert(0, values[7])
+            self.emp_address_id.delete(0, tk.END)
+            self.emp_address_id.insert(0, values[8])
 
     def load_employees(self):
         query = """
         SELECT emp_id, title, emp_name, emp_phone, date_birth, 
-               gender, hire_date, salary
+               gender, hire_date, salary, address_id
         FROM Employee
         """
         employees = self.execute_db_operation(query)
@@ -356,7 +379,7 @@ class PharmacyManagementSystem:
             for employee in employees:
                 emp_dob = employee.date_birth.strftime('%Y-%m-%d') if isinstance(employee.date_birth, datetime) else employee.date_birth
                 hire_date = employee.hire_date.strftime('%Y-%m-%d') if isinstance(employee.hire_date, datetime) else employee.hire_date
-                self.employee_tree.insert('', 'end', values=(employee.emp_id, employee.title, employee.emp_name, employee.emp_phone, emp_dob, employee.gender, hire_date, f"{employee.salary:.2f}"))
+                self.employee_tree.insert('', 'end', values=(employee.emp_id, employee.title, employee.emp_name, employee.emp_phone, emp_dob, employee.gender, hire_date, f"{employee.salary:.2f}", employee.address_id))
 
     def add_employee(self):
         try:
@@ -368,9 +391,10 @@ class PharmacyManagementSystem:
             emp_gender = self.emp_gender.get()
             hire_date = self.hire_date.get_date().strftime('%Y-%m-%d')
             salary = self.salary.get().strip()
+            address_id = self.emp_address_id.get().strip()
 
-            if not emp_id or not emp_name:
-                messagebox.showerror("Error", "Please enter Employee ID and Name.")
+            if not emp_id or not emp_name or not address_id:
+                messagebox.showerror("Error", "Please enter Employee ID, Name, and Address ID.")
                 return
 
             if not self.is_valid_float(salary):
@@ -379,8 +403,8 @@ class PharmacyManagementSystem:
 
             query = """
             INSERT INTO Employee (emp_id, title, emp_name, emp_phone, date_birth,
-                                  gender, hire_date, salary)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                  gender, hire_date, salary, address_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
             params = (
                 emp_id,
@@ -390,7 +414,8 @@ class PharmacyManagementSystem:
                 emp_dob,
                 emp_gender,
                 hire_date,
-                float(salary)
+                float(salary),
+                address_id
             )
             self.execute_db_operation(query, params)
             self.load_employees()
@@ -414,9 +439,14 @@ class PharmacyManagementSystem:
             emp_gender = self.emp_gender.get()
             hire_date = self.hire_date.get_date().strftime('%Y-%m-%d')
             salary = self.salary.get().strip()
+            address_id = self.emp_address_id.get().strip()
 
             if not emp_id:
                 messagebox.showerror("Error", "Please enter Employee ID.")
+                return
+
+            if not address_id:
+                messagebox.showerror("Error", "Please enter Address ID.")
                 return
 
             if not self.is_valid_float(salary):
@@ -426,7 +456,7 @@ class PharmacyManagementSystem:
             query = """
             UPDATE Employee
             SET title = ?, emp_name = ?, emp_phone = ?, date_birth = ?, 
-                gender = ?, hire_date = ?, salary = ?
+                gender = ?, hire_date = ?, salary = ?, address_id = ?
             WHERE emp_id = ?
             """
             params = (
@@ -437,6 +467,7 @@ class PharmacyManagementSystem:
                 emp_gender,
                 hire_date,
                 float(salary),
+                address_id,
                 emp_id
             )
             self.execute_db_operation(query, params)
@@ -457,6 +488,7 @@ class PharmacyManagementSystem:
         self.emp_gender.set('')
         self.hire_date.set_date(datetime.today())
         self.salary.delete(0, tk.END)
+        self.emp_address_id.delete(0, tk.END)
 
     def is_valid_float(self, value):
         try:
@@ -1350,7 +1382,7 @@ class PharmacyManagementSystem:
         self.suppliers_tree.delete(*self.suppliers_tree.get_children())
         if suppliers:
             for sup in suppliers:
-                self.suppliers_tree.insert('', 'end', values=(sup.supplier_id, sup.contact_name, sup.contact_phone, sup.address_id, sup.company_name))
+                self.suppliers_tree.insert('', 'end', values=(sup.supplier_id, sup.contact_name, sup.address_id, sup.contact_phone, sup.company_name))
 
     def add_supplier(self):
         try:
